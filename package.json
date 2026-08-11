@@ -1,0 +1,11 @@
+{
+  "name": "kafka-bruno-collection",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dependencias usadas pelos scripts desta collection Bruno (metodo custom de envio para Kafka).",
+  "dependencies": {
+    "@kafkajs/confluent-schema-registry": "^4.1.0",
+    "jks-js": "^1.1.7",
+    "kafkajs": "^2.2.4"
+  }
+}

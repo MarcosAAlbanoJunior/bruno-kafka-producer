@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "PedidoValue",
+  "namespace": "exemplos",
+  "fields": [
+    { "name": "orderId", "type": "string" },
+    { "name": "status", "type": "string" }
+  ]
+}

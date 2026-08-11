@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "kafka-producer",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

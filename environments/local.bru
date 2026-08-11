@@ -1,0 +1,25 @@
+vars {
+  kafkaBrokers: localhost:9092
+  kafkaClientId: bruno-kafka-producer
+  kafkaTopic: meu-topico
+
+  kafkaSslEnabled: false
+  kafkaSslRejectUnauthorized: true
+
+  kafkaTruststorePath:
+  kafkaKeystorePath:
+
+  kafkaSaslEnabled: false
+  kafkaSaslMechanism: plain
+  kafkaSaslUsername:
+
+  kafkaSchemaRegistryEnabled: false
+  kafkaSchemaRegistryUrl: http://localhost:8081
+  kafkaSchemaRegistryUsername:
+  kafkaValueSchemaType: AVRO
+  kafkaValueSchemaSubject:
+  kafkaValueSchemaId:
+  kafkaValueSchemaFile: schemas/pedido-value.avsc
+
+  kafkaEchoUrl: https://httpbin.org/post
+}

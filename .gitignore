@@ -1,0 +1,5 @@
+node_modules/
+*.log
+
+# Caso opte por usar .env em vez de (ou junto com) as secret vars nativas do Bruno
+.env
