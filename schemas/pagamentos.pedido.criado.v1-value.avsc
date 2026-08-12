@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "PedidoCriado",
+  "namespace": "pagamentos",
+  "fields": [
+    { "name": "orderId", "type": "string" },
+    { "name": "status", "type": "string" },
+    { "name": "amount", "type": "double" }
+  ]
+}

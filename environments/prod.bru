@@ -1,0 +1,26 @@
+vars {
+  ~comentario: kafkaIsProduction bloqueia envio ate alguem trocar kafkaAllowProduction para true.
+  kafkaBrokers: broker1.prod.interno:9093,broker2.prod.interno:9093
+  kafkaClientId: bruno-kafka
+  kafkaSslEnabled: true
+  kafkaSslRejectUnauthorized: true
+  kafkaCertsDir: C:/certs/prod
+  kafkaTruststore: truststore-corporativo.jks
+  kafkaKeystore_pagamentos: pagamentos-prod.jks
+  kafkaSaslEnabled: true
+  kafkaSaslMechanism: scram-sha-512
+  kafkaSaslUsername: svc-default-prod
+  kafkaSchemaRegistryEnabled: true
+  kafkaSchemaRegistryUrl: https://schema-registry.prod.interno
+  kafkaSchemaRegistryUsername: svc-registry-prod
+  kafkaIsProduction: true
+  kafkaAllowProduction: false
+  kafkaDryRun: false
+  kafkaEchoUrl: http://127.0.0.1:1/rode-pelo-runner
+}
+vars:secret [
+  kafkaTruststorePassword,
+  kafkaKeystorePassword_pagamentos,
+  kafkaSaslPassword,
+  kafkaSchemaRegistryPassword
+]

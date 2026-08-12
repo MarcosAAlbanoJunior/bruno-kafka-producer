@@ -1,0 +1,52 @@
+meta {
+  name: Doctor
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{kafkaEchoUrl}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  ~kafkaApp: pagamentos
+  ~kafkaTopic: pagamentos.pedido.criado.v1
+}
+
+script:pre-request {
+  const path = require('path');
+  await require(path.join(bru.cwd(), 'lib', 'bruno-kafka.js')).doctor({ bru });
+}
+
+tests {
+  test("ambiente pronto para enviar", function () {
+    expect(bru.getVar('kafkaDoctorOk')).to.equal('true');
+  });
+}
+
+docs {
+  # Doctor - "por que nao funciona?"
+
+  Rode este request ANTES de abrir um chamado. Ele testa, na ordem:
+
+  1. dependencias npm instaladas
+  2. variaveis de conexao do environment selecionado
+  3. truststore/keystore: arquivo existe, senha correta, o que tem dentro
+  4. conexao real com os brokers (TLS + SASL) e quanto tempo levou
+  5. se o topico existe nesse cluster (e sugere nomes parecidos se nao existir)
+  6. Schema Registry: responde? o subject `<topico>-value` ja existe?
+
+  O resultado sai como checklist no **Console** (`Ctrl+Shift+I` > Console),
+  com a causa provavel de cada falha - VPN, senha do JKS, ACL, nome do topico.
+
+  ## Como rodar
+  Selecione o environment, clique com o botao direito na pasta **Ferramentas**
+  (ou neste request) e use **Run**. Nenhuma chamada HTTP sai da maquina.
+
+  ## Dica
+  Ative as variaveis `kafkaApp` e `kafkaTopic` acima (aba **Vars**, tire o `~`)
+  para o diagnostico checar tambem o certificado daquela aplicacao e a
+  existencia daquele topico especifico.
+}

@@ -1,5 +1,16 @@
 node_modules/
 *.log
 
-# Caso opte por usar .env em vez de (ou junto com) as secret vars nativas do Bruno
+# Saida do request "Consumir Ultimas Mensagens"
+out/
+
+# Certificados e senhas nunca entram no repositorio.
+# As senhas ficam em variaveis SECRETAS do Bruno (tela de Environment), que sao
+# gravadas fora da collection. Os certificados ficam em kafkaCertsDir, tambem
+# fora daqui - mas as regras abaixo existem como rede de seguranca.
 .env
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key

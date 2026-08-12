@@ -1,0 +1,71 @@
+meta {
+  name: Pedido Criado
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{kafkaEchoUrl}}
+  body: json
+  auth: none
+}
+
+headers {
+  tipo-evento: PEDIDO_CRIADO
+  origem: bruno
+}
+
+vars:pre-request {
+  kafkaApp: pagamentos
+  kafkaTopic: pagamentos.pedido.criado.v1
+  kafkaKey: 12345
+}
+
+body:json {
+  {
+    "orderId": "12345",
+    "status": "created",
+    "amount": 199.9
+  }
+}
+
+script:pre-request {
+  const path = require('path');
+  await require(path.join(bru.cwd(), 'lib', 'bruno-kafka.js')).produce({ req, bru });
+}
+
+tests {
+  test("mensagem publicada no topico", function () {
+    expect(bru.getVar('kafkaSendStatus')).to.be.oneOf(['success', 'dryrun']);
+  });
+}
+
+docs {
+  # Pedido Criado
+
+  Publica no topico `pagamentos.pedido.criado.v1`.
+
+  ## O que voce edita no dia a dia
+  - **Body**: o JSON e o valor da mensagem. Aceita `{{variaveis}}` do Bruno.
+  - **Headers**: viram os **headers da mensagem Kafka** (o `content-type` e
+    ignorado). Bom lugar para `tipo-evento`, `correlation-id`, `traceparent`.
+  - **Vars > Pre Request**: `kafkaTopic` e `kafkaKey`.
+
+  Brokers, certificados e senhas **nao ficam aqui** - vem do environment
+  selecionado (dev/hml/prod).
+
+  ## Como enviar
+  Botao direito no request > **Run** (ou selecione a pasta e use o Runner).
+  Nenhuma requisicao HTTP sai: o script publica direto no Kafka e cancela a
+  chamada HTTP. O resultado (particao, offset, tempo) aparece no **Console**
+  (`Ctrl+Shift+I`) e na aba **Tests**.
+
+  ## Truques uteis
+  | quero... | faca |
+  |---|---|
+  | so validar o payload contra o schema, sem publicar | `kafkaDryRun: true` |
+  | apagar uma chave em topico compactado (tombstone) | deixe o Body vazio |
+  | mandar para outra particao / mudar acks | `kafkaPartition`, `kafkaAcks` |
+  | usar outro subject de schema | `kafkaSchemaSubject` |
+  | conferir se chegou | **Ferramentas > Consumir Ultimas Mensagens** |
+}

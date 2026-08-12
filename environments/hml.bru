@@ -1,0 +1,32 @@
+vars {
+  ~comentario: Exemplo de cluster corporativo (mTLS + SASL + Schema Registry).
+  ~comentario2: Qualquer variavel aceita o sufixo _<kafkaApp> para variar por aplicacao.
+  kafkaBrokers: broker1.hml.interno:9093,broker2.hml.interno:9093
+  kafkaClientId: bruno-kafka
+  kafkaSslEnabled: true
+  kafkaSslRejectUnauthorized: true
+  kafkaCertsDir: C:/certs/hml
+  kafkaTruststore: truststore-corporativo.jks
+  kafkaKeystore:
+  kafkaKeystore_pagamentos: pagamentos-hml.jks
+  kafkaKeystore_pedidos: pedidos-hml.p12
+  kafkaSaslEnabled: true
+  kafkaSaslMechanism: scram-sha-512
+  kafkaSaslUsername: svc-default-hml
+  kafkaSaslUsername_pagamentos: svc-pagamentos-hml
+  kafkaSchemaRegistryEnabled: true
+  kafkaSchemaRegistryUrl: https://schema-registry.hml.interno
+  kafkaSchemaRegistryUsername: svc-registry-hml
+  kafkaIsProduction: false
+  kafkaAllowProduction: true
+  kafkaDryRun: false
+  kafkaEchoUrl: http://127.0.0.1:1/rode-pelo-runner
+}
+vars:secret [
+  kafkaTruststorePassword,
+  kafkaKeystorePassword_pagamentos,
+  kafkaKeystorePassword_pedidos,
+  kafkaSaslPassword,
+  kafkaSaslPassword_pagamentos,
+  kafkaSchemaRegistryPassword
+]

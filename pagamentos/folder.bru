@@ -1,0 +1,18 @@
+meta {
+  name: pagamentos
+  seq: 2
+}
+
+docs {
+  # pagamentos
+
+  Uma pasta = uma **aplicacao/dominio**. Todos os requests aqui dentro usam
+  `kafkaApp: pagamentos`, o que faz o script buscar automaticamente as variaveis
+  com sufixo `_pagamentos` no environment selecionado (keystore, senha do
+  keystore, usuario SASL...), caindo na variavel sem sufixo quando nao existir
+  uma especifica.
+
+  Para criar o request de um novo evento: clique com o botao direito em um
+  request existente > **Clone**, mude `kafkaTopic` na aba **Vars** e o JSON da
+  aba **Body**. Nada de script para copiar.
+}

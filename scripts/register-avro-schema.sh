@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Registra (ou reaproveita, se identico) um schema Avro/JSON/Protobuf no Confluent
-# Schema Registry via REST, a partir de um arquivo local (ex: schemas/pedido-value.avsc).
+# Schema Registry via REST, a partir de um arquivo local (ex: schemas/pagamentos.pedido.criado.v1-value.avsc).
 #
 # Uso:
 #   ./scripts/register-avro-schema.sh <schema-registry-url> <subject> <arquivo-schema> [tipo] [usuario:senha]
 #
 # Exemplos:
-#   ./scripts/register-avro-schema.sh http://localhost:8081 pedidos-value schemas/pedido-value.avsc
-#   ./scripts/register-avro-schema.sh https://meu-registry:8081 pedidos-value schemas/pedido-value.avsc AVRO scruser:scrpass
+#   ./scripts/register-avro-schema.sh http://localhost:8081 pedidos-value schemas/pagamentos.pedido.criado.v1-value.avsc
+#   ./scripts/register-avro-schema.sh https://meu-registry:8081 pedidos-value schemas/pagamentos.pedido.criado.v1-value.avsc AVRO scruser:scrpass
 #
 # Requer: curl e jq.
 
