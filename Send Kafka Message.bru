@@ -31,13 +31,24 @@ script:pre-request {
   const messageValue = req.getBody();
 
   // Schema Registry e OPCIONAL. Se ativado, o schema a usar vem, em ordem de
-  // prioridade: id explicito > arquivo .avsc/.json local (registra/reaproveita) >
+  // prioridade: id explicito > colado direto no environment (kafkaValueSchemaInline,
+  // sem precisar tocar em arquivo) > arquivo .avsc/.json versionado no repo >
   // ultimo schema publicado no subject.
   const schemaRegistryEnabled = bru.getEnvVar('kafkaSchemaRegistryEnabled') === 'true';
   let schemaRegistryConfig;
   if (schemaRegistryEnabled) {
-    const schemaFile = bru.getEnvVar('kafkaValueSchemaFile');
     const schemaId = bru.getEnvVar('kafkaValueSchemaId');
+    const schemaInline = bru.getEnvVar('kafkaValueSchemaInline');
+    const schemaFile = bru.getEnvVar('kafkaValueSchemaFile');
+
+    let schemaContent;
+    if (!schemaId) {
+      if (schemaInline) {
+        schemaContent = schemaInline;
+      } else if (schemaFile) {
+        schemaContent = fs.readFileSync(path.join(bru.cwd(), schemaFile), 'utf-8');
+      }
+    }
 
     schemaRegistryConfig = {
       enabled: true,
@@ -50,9 +61,7 @@ script:pre-request {
         id: schemaId || undefined,
         type: bru.getEnvVar('kafkaValueSchemaType') || 'AVRO',
         subject: bru.getEnvVar('kafkaValueSchemaSubject') || undefined,
-        schema: (!schemaId && schemaFile)
-          ? fs.readFileSync(path.join(bru.cwd(), schemaFile), 'utf-8')
-          : undefined,
+        schema: schemaContent || undefined,
       },
     };
   }
@@ -139,8 +148,9 @@ docs {
   4. Escolha o environment (ex: `local`) e ajuste `kafkaBrokers`, `kafkaTopic`,
      `kafkaTruststorePath` / `kafkaKeystorePath` (deixe em branco se nao usar).
   5. Se o cluster usar Schema Registry, ative `kafkaSchemaRegistryEnabled` e ajuste
-     `kafkaSchemaRegistryUrl` / `kafkaValueSchemaFile` (ou `...SchemaId`/`...SchemaSubject`)
-     - veja detalhes no README.md.
+     `kafkaSchemaRegistryUrl` + uma forma de indicar o schema: `kafkaValueSchemaInline`
+     (cola o JSON direto no environment, sem precisar de arquivo), `kafkaValueSchemaFile`,
+     `kafkaValueSchemaId` ou `kafkaValueSchemaSubject` - veja detalhes no README.md.
   6. Edite o JSON da aba Body - e ele que vai como valor da mensagem Kafka (com ou
      sem Schema Registry, o Body continua sendo o mesmo JSON).
 }

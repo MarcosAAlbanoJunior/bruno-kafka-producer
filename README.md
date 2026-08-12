@@ -146,18 +146,28 @@ Se o cluster usa Confluent Schema Registry, ative no environment:
   A senha vai no `.env` (`KAFKA_SCHEMA_REGISTRY_PASSWORD`), nunca no environment aberto.
 - `kafkaValueSchemaType`: `AVRO` (padrão), `JSON` ou `PROTOBUF`.
 
-E aí escolha **uma** destas três formas de indicar qual schema usar (nessa ordem de
+E aí escolha **uma** destas quatro formas de indicar qual schema usar (nessa ordem de
 prioridade caso mais de uma esteja preenchida):
 
 1. **`kafkaValueSchemaId`** — você já sabe o id numérico do schema no registry (o
    jeito mais rápido: nenhuma chamada extra ao registry além do encode).
-2. **`kafkaValueSchemaFile`** — caminho (relativo à raiz da collection) de um arquivo
+2. **`kafkaValueSchemaInline`** — cola o schema (Avro/JSON/Protobuf) **direto na tela
+   de Environment do Bruno**, como texto JSON de uma linha só (sem quebras de linha).
+   É a opção mais fácil de usar: não precisa acessar a pasta da collection nem criar
+   arquivo nenhum, só colar e mandar. O script registra esse schema no subject na hora
+   de enviar — se o conteúdo já existir lá, o registry devolve o id existente (não
+   duplica). Se quiser deixar o JSON "bonito" (várias linhas) antes de colar, dá pra
+   minificar em qualquer formatador online ou com `jq -c . < schema.avsc`.
+3. **`kafkaValueSchemaFile`** — caminho (relativo à raiz da collection) de um arquivo
    `.avsc`/`.json` **versionado no Git**, ex. `schemas/pedido-value.avsc` (já incluso
-   como exemplo). O script registra esse schema no subject na hora de enviar — se o
-   conteúdo já existir lá, o registry devolve o id existente (não duplica).
-3. **Nenhum dos dois acima** — o script busca o **último schema publicado** no subject
+   como exemplo). Útil quando o schema é algo que o time quer versionar junto do
+   código; tem o mesmo efeito de registro/reaproveitamento do item 2, só que a partir
+   de um arquivo em vez de colado na hora.
+4. **Nenhum dos anteriores** — o script busca o **último schema publicado** no subject
    (por padrão `<kafkaTopic>-value`, o padrão do Confluent; dá pra sobrescrever com
-   `kafkaValueSchemaSubject` se o seu subject tiver outro nome).
+   `kafkaValueSchemaSubject` se o seu subject tiver outro nome). Esse é o caso mais
+   comum no dia a dia: o schema já foi registrado por quem escreveu o serviço
+   produtor, e quem só quer testar o envio no Bruno nunca precisa criar um schema.
 
 Com Schema Registry ativado, o **JSON da aba Body continua sendo o valor da mensagem**
 — só que agora ele é validado contra o schema e serializado no formato wire do Confluent
