@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{kafkaEchoUrl}}
+  url: http://127.0.0.1:1/eco-local
   body: json
   auth: none
 }
@@ -15,18 +15,18 @@ headers {
   origem: bruno
 }
 
-vars:pre-request {
-  kafkaApp: pagamentos
-  kafkaTopic: pagamentos.pedido.criado.v1
-  kafkaKey: 12345
-}
-
 body:json {
   {
     "orderId": "12345",
     "status": "created",
     "amount": 199.9
   }
+}
+
+vars:pre-request {
+  kafkaApp: pagamentos
+  kafkaTopic: pagamentos.pedido.criado.v1
+  kafkaKey: 12345
 }
 
 script:pre-request {
@@ -42,24 +42,31 @@ tests {
 
 docs {
   # Pedido Criado
-
+  
   Publica no topico `pagamentos.pedido.criado.v1`.
-
+  
   ## O que voce edita no dia a dia
   - **Body**: o JSON e o valor da mensagem. Aceita `{{variaveis}}` do Bruno.
   - **Headers**: viram os **headers da mensagem Kafka** (o `content-type` e
     ignorado). Bom lugar para `tipo-evento`, `correlation-id`, `traceparent`.
   - **Vars > Pre Request**: `kafkaTopic` e `kafkaKey`.
-
+  
   Brokers, certificados e senhas **nao ficam aqui** - vem do environment
   selecionado (local/dev/hml).
 
   ## Como enviar
-  Botao direito no request > **Run** (ou selecione a pasta e use o Runner).
-  Nenhuma requisicao HTTP sai: o script publica direto no Kafka e cancela a
-  chamada HTTP. O resultado (particao, offset, tempo) aparece no **Console**
-  (`Ctrl+Shift+I`) e na aba **Tests**.
+  Clique em **Send**. A aba **Response** mostra `200` com o recibo do envio:
+  topico, particao, offset, bytes e tempo.
 
+  A URL `http://127.0.0.1:1/eco-local` acima nao e chamada: o script publica no
+  Kafka e responde a si mesmo por um servidor de uso unico em 127.0.0.1, porta
+  sorteada, protegido por token. **Nenhum byte sai da maquina** - e se alguem
+  trocar essa URL por um endereco externo, o envio e bloqueado antes de publicar.
+
+  O Runner (botao direito na pasta > *Run*) continua funcionando para disparar
+  varios eventos de uma vez; nesse modo o recibo sai no **Console**
+  (`Ctrl+Shift+I`), porque o Runner cancela a chamada HTTP.
+  
   ## Truques uteis
   | quero... | faca |
   |---|---|
