@@ -297,6 +297,22 @@ const baseEnv = {
 
   console.log('\n== doctor ==');
 
+  await check('doctor nao usa require.resolve (nao existe no sandbox do Bruno)', async () => {
+    // ignora comentarios: o proprio arquivo explica por que nao usa require.resolve
+    const codigo = fs.readFileSync(path.join(ROOT, 'lib', 'kafka-doctor.js'), 'utf-8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    assert(!/require\.resolve/.test(codigo), 'require.resolve quebra dentro do Bruno');
+    const { checks } = await runDiagnostics({ collectionRoot: ROOT, connection: { brokers: [], ssl: {}, sasl: {} } });
+    assert(checks[0].name === 'Dependencias npm' && checks[0].status === 'ok', JSON.stringify(checks[0]));
+    assert(/kafkajs \d+\./.test(checks[0].detail), 'deveria mostrar a versao: ' + checks[0].detail);
+  });
+
+  await check('doctor funciona mesmo sem saber a pasta da collection', async () => {
+    const { checks } = await runDiagnostics({ connection: { brokers: [], ssl: {}, sasl: {} } });
+    assert(checks[0].status === 'ok' && /kafkajs/.test(checks[0].detail));
+  });
+
   await check('doctor sem brokers para no primeiro item, sem stack trace', async () => {
     const { checks, ok } = await runDiagnostics({ connection: { brokers: [], ssl: {}, sasl: {} } });
     assert(ok === false);
