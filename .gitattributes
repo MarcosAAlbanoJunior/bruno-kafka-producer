@@ -1,0 +1,20 @@
+# Normaliza as quebras de linha na hora do commit (evita diff inteiro so por
+# causa de CRLF quando alguem edita no Windows e outra pessoa no Linux/WSL).
+* text=auto
+
+# Scripts de shell precisam de LF mesmo no Windows: com CRLF, o Linux/WSL
+# reclama com "bad interpreter: /usr/bin/env bash^M".
+*.sh text eol=lf
+
+# Arquivos da collection e do codigo: texto normal.
+*.bru text
+*.js text
+*.json text
+*.avsc text
+*.md text
+
+# Certificados e keystores nunca deveriam entrar aqui (ver .gitignore), mas se
+# entrarem, que nao sejam corrompidos por conversao de quebra de linha.
+*.jks binary
+*.p12 binary
+*.pfx binary
