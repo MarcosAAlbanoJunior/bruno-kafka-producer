@@ -1,26 +1,26 @@
 vars {
+  ~comentario: ENVIRONMENT = CLUSTER. Topico e payload ficam no request, nunca aqui.
   kafkaBrokers: localhost:9092
-  kafkaClientId: bruno-kafka-producer
-  kafkaTopic: meu-topico
-
+  kafkaClientId: bruno-kafka
   kafkaSslEnabled: false
   kafkaSslRejectUnauthorized: true
-
-  kafkaTruststorePath:
-  kafkaKeystorePath:
-
+  kafkaCertsDir:
+  kafkaTruststore:
+  kafkaKeystore:
   kafkaSaslEnabled: false
   kafkaSaslMechanism: plain
   kafkaSaslUsername:
-
   kafkaSchemaRegistryEnabled: false
   kafkaSchemaRegistryUrl: http://localhost:8081
   kafkaSchemaRegistryUsername:
-  kafkaValueSchemaType: AVRO
-  kafkaValueSchemaSubject:
-  kafkaValueSchemaId:
-  kafkaValueSchemaFile: schemas/pedido-value.avsc
-  kafkaValueSchemaInline:
-
-  kafkaEchoUrl: https://httpbin.org/post
+  kafkaIsProduction: false
+  kafkaAllowProduction: true
+  kafkaDryRun: false
+  kafkaEchoUrl: http://127.0.0.1:1/rode-pelo-runner
 }
+vars:secret [
+  kafkaTruststorePassword,
+  kafkaKeystorePassword,
+  kafkaSaslPassword,
+  kafkaSchemaRegistryPassword
+]

@@ -1,0 +1,58 @@
+meta {
+  name: Consumir Ultimas Mensagens
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{kafkaEchoUrl}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  kafkaTopic: pagamentos.pedido.criado.v1
+  kafkaApp: pagamentos
+  kafkaMaxMessages: 10
+  kafkaTimeoutMs: 10000
+  kafkaFromBeginning: false
+}
+
+script:pre-request {
+  const path = require('path');
+  await require(path.join(bru.cwd(), 'lib', 'bruno-kafka.js')).consume({ bru });
+}
+
+tests {
+  test("leitura do topico concluida", function () {
+    expect(bru.getVar('kafkaConsumeStatus')).to.equal('success');
+  });
+}
+
+docs {
+  # Conferir o que chegou no topico
+
+  Le as **ultimas N mensagens** do topico e mostra key, headers, timestamp e o
+  payload ja decodificado (Avro/Protobuf/JSON-Schema viram JSON legivel quando o
+  Schema Registry esta ligado).
+
+  Usa um consumer group descartavel (`bruno-viewer-...`), posiciona o offset em
+  "fim - N" e apaga o group no final: **nao mexe no offset dos consumers reais**
+  da aplicacao.
+
+  ## Variaveis (aba Vars)
+  | variavel | o que faz |
+  |---|---|
+  | `kafkaTopic` | topico a ler |
+  | `kafkaApp` | qual certificado/usuario usar (sufixo `_<app>` do environment) |
+  | `kafkaMaxMessages` | quantas mensagens por particao (padrao 10) |
+  | `kafkaTimeoutMs` | quanto esperar antes de desistir (padrao 10s) |
+  | `kafkaFromBeginning` | `true` le desde o inicio da retencao |
+
+  ## Onde ver o resultado
+  - **Console** do Bruno (`Ctrl+Shift+I`): resumo formatado
+  - **`out/last-consume.json`**: o resultado completo, para abrir no editor,
+    dar diff ou colar num chamado (essa pasta esta no `.gitignore`)
+  - variaveis `kafkaMessages` / `kafkaLastMessage`, se voce quiser encadear
+    asserts nos testes
+}

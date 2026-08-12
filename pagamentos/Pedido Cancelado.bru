@@ -1,0 +1,50 @@
+meta {
+  name: Pedido Cancelado
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{kafkaEchoUrl}}
+  body: json
+  auth: none
+}
+
+headers {
+  tipo-evento: PEDIDO_CANCELADO
+  origem: bruno
+}
+
+vars:pre-request {
+  kafkaApp: pagamentos
+  kafkaTopic: pagamentos.pedido.cancelado.v1
+  kafkaKey: 12345
+}
+
+body:json {
+  {
+    "orderId": "12345",
+    "status": "cancelled",
+    "reason": "solicitacao do cliente"
+  }
+}
+
+script:pre-request {
+  const path = require('path');
+  await require(path.join(bru.cwd(), 'lib', 'bruno-kafka.js')).produce({ req, bru });
+}
+
+tests {
+  test("mensagem publicada no topico", function () {
+    expect(bru.getVar('kafkaSendStatus')).to.be.oneOf(['success', 'dryrun']);
+  });
+}
+
+docs {
+  # Pedido Cancelado
+
+  Este request existe para mostrar o custo de adicionar um topico novo: ele e um
+  **Clone** do "Pedido Criado" com duas mudancas - `kafkaTopic` na aba Vars e o
+  JSON do Body. O `script:pre-request` continua com a mesma linha unica, porque
+  toda a logica mora em `lib/bruno-kafka.js`.
+}
