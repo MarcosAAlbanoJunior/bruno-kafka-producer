@@ -22,14 +22,31 @@ function makeBru({ envVars = {}, vars = {}, requestVars, envName = 'local', cwd 
   return { bru, state, skipped };
 }
 
-function makeReq({ body, headers = {} }) {
-  let currentBody = body;
+/** `url` simula o campo URL do request (o eco local troca esse valor). */
+function makeReq({ body, headers = {}, url = 'http://127.0.0.1:1/eco-local' }) {
+  const estado = { body, url, method: 'POST' };
   return {
-    getBody: () => currentBody,
-    setBody: (b) => { currentBody = b; },
+    getBody: () => estado.body,
+    setBody: (b) => { estado.body = b; },
     getHeaders: () => headers,
-    setUrl: () => {},
+    getUrl: () => estado.url,
+    setUrl: (u) => { estado.url = u; },
+    setMethod: (m) => { estado.method = m; },
+    estado,
   };
+}
+
+/** GET simples, usado para conversar com o eco local nos testes. */
+function httpGet(url) {
+  return new Promise((resolve, reject) => {
+    const request = http.get(url, (res) => {
+      let body = '';
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => resolve({ status: res.statusCode, body }));
+    });
+    request.on('error', reject);
+    request.setTimeout(3000, () => request.destroy(new Error('timeout')));
+  });
 }
 
 /* Schema Registry mockado (o suficiente para register/getLatest/getById/encode) */
@@ -118,4 +135,4 @@ function summary() {
   process.exitCode = failed.length ? 1 : 0;
 }
 
-module.exports = { makeBru, makeReq, startMockRegistry, check, expectThrows, assert, summary };
+module.exports = { makeBru, makeReq, httpGet, startMockRegistry, check, expectThrows, assert, summary };

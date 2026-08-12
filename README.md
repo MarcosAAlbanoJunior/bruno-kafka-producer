@@ -52,12 +52,7 @@ kafka-bruno/
 ## O dia a dia
 
 **Enviar uma mensagem:** selecione o environment → abra o request → edite o Body →
-botão direito no request > **Run**.
-
-> Use sempre o **Run/Runner**, não o botão Send. É no Runner que o script cancela
-> a chamada HTTP falsa que o Bruno dispararia, deixando só o Kafka acontecer.
-> (Se alguém clicar em Send por hábito, a URL padrão aponta para `127.0.0.1`, então
-> nenhum payload sai da máquina — só aparece um erro de conexão inofensivo.)
+**Send**.
 
 **O que você edita em cada request:**
 
@@ -67,9 +62,26 @@ botão direito no request > **Run**.
 | **Headers** | os **headers da mensagem Kafka** (`content-type` e afins são ignorados) |
 | **Vars > Pre Request** | `kafkaTopic`, `kafkaKey`, `kafkaApp` |
 
-**Onde ver o resultado:** Console do Bruno (`Ctrl+Shift+I` > Console) mostra o
-recibo — partição, offset, schema id, tempo. A aba **Tests** fica verde. Em caso
-de erro, a mensagem aparece direto no Runner, já com a causa provável.
+**Onde ver o resultado:** na aba **Response**, com `200` verde:
+
+```json
+{
+  "status": "publicado",
+  "ambiente": "hml",
+  "aplicacao": "pagamentos",
+  "topico": "pagamentos.pedido.criado.v1",
+  "key": "12345",
+  "particao": 2,
+  "offset": 148213,
+  "bytes": 214,
+  "tempo": "38ms",
+  "schema": { "tipo": "AVRO", "id": 42, "subject": "pagamentos.pedido.criado.v1-value" },
+  "payload": { "orderId": "12345", "status": "created" }
+}
+```
+
+Em caso de erro, a mensagem aparece com a causa provável junto. O mesmo recibo
+também sai no Console (`Ctrl+Shift+I`), em formato compacto:
 
 ```
 ----------------------------------------------------------------
@@ -86,6 +98,32 @@ de erro, a mensagem aparece direto no Runner, já com a causa provável.
 mensagens do tópico com o payload Avro já decodificado em JSON. Usa um consumer
 group descartável, então **não mexe no offset dos consumers reais**. O resultado
 completo também vai para `out/last-consume.json`.
+
+**Disparar vários eventos de uma vez:** botão direito na pasta > *Run*, que abre o
+Collection Runner. Ele roda **todos** os requests da pasta em sequência — bom para
+montar um cenário ponta a ponta, ruim para "só quero mandar este evento aqui".
+Nesse modo o Bruno cancela a chamada HTTP, então o recibo sai apenas no Console.
+
+### Por que a URL do request é `127.0.0.1:1`?
+
+O Bruno sempre dispara a requisição HTTP configurada quando você clica em Send —
+não existe request "só script". Em vez de mandar essa chamada para fora (a versão
+original usava `httpbin.org`, o que fazia o **payload real sair da máquina**), a
+collection responde a si mesma: o script publica no Kafka e sobe um servidor HTTP
+efêmero em `127.0.0.1` que devolve o recibo acima. São seis camadas:
+
+1. escuta **só** em `127.0.0.1`, nunca em `0.0.0.0`, numa porta sorteada pelo SO;
+2. o caminho da URL é um **token aleatório de 192 bits** — sem ele, 404 sem dado
+   nenhum;
+3. recusa conexão que não venha do próprio loopback;
+4. **uso único**: fecha assim que responde;
+5. morre sozinho em 5 segundos mesmo se ninguém conectar;
+6. se alguém apontar a URL do request para um endereço externo, o envio é
+   **bloqueado antes de publicar** — nem a mensagem vai para o Kafka, nem o
+   payload sai pela chamada HTTP.
+
+A URL que fica salva no `.bru` (`http://127.0.0.1:1/eco-local`) é só um destino
+morto: o script a substitui pela do eco a cada execução.
 
 ## Como crescer
 
@@ -122,7 +160,6 @@ Nada disso mexe em script: os requests chamam uma linha só de
 | `kafkaSchemaRegistryPassword` | 🔒 secret |
 | `kafkaIsProduction` / `kafkaAllowProduction` | trava de produção (abaixo) |
 | `kafkaDryRun` | valida sem publicar |
-| `kafkaEchoUrl` | URL "de fachada" do request; deixe apontando para `127.0.0.1` |
 
 **Request/pasta (evento).**
 
@@ -202,9 +239,10 @@ para ver o uso):
 
 ## Mexendo na lógica
 
-Tudo mora em `lib/`, com testes: `npm test` (34 casos — resolução de variáveis,
+Tudo mora em `lib/`, com testes: `npm test` (46 casos — resolução de variáveis,
 trava de produção, tombstone, encode/decode Avro contra um Schema Registry
-mockado, cálculo de offsets do consumidor e as mensagens de erro).
+mockado, cálculo de offsets do consumidor, o eco local com token/uso único, a
+trava de URL externa e as mensagens de erro).
 
 | Arquivo | Responsabilidade |
 |---|---|
@@ -214,6 +252,7 @@ mockado, cálculo de offsets do consumidor e as mensagens de erro).
 | `lib/kafka-consumer.js` | leitura das últimas N mensagens + decode |
 | `lib/kafka-doctor.js` | diagnóstico |
 | `lib/http-json.js` | cliente HTTP mínimo para o registry |
+| `lib/local-echo.js` | eco local efêmero que devolve o recibo na aba Response |
 
 Também dá para usar `sendKafkaMessage()` fora do Bruno (num script Node ou no
 `bru run` de um pipeline):

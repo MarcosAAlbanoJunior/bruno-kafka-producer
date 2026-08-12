@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{kafkaEchoUrl}}
+  url: http://127.0.0.1:1/eco-local
   body: none
   auth: none
 }
@@ -17,7 +17,7 @@ vars:pre-request {
 
 script:pre-request {
   const path = require('path');
-  await require(path.join(bru.cwd(), 'lib', 'bruno-kafka.js')).doctor({ bru });
+  await require(path.join(bru.cwd(), 'lib', 'bruno-kafka.js')).doctor({ req, bru });
 }
 
 tests {
@@ -38,12 +38,11 @@ docs {
   5. se o topico existe nesse cluster (e sugere nomes parecidos se nao existir)
   6. Schema Registry: responde? o subject `<topico>-value` ja existe?
 
-  O resultado sai como checklist no **Console** (`Ctrl+Shift+I` > Console),
-  com a causa provavel de cada falha - VPN, senha do JKS, ACL, nome do topico.
-
   ## Como rodar
-  Selecione o environment, clique com o botao direito na pasta **Ferramentas**
-  (ou neste request) e use **Run**. Nenhuma chamada HTTP sai da maquina.
+  Selecione o environment e clique em **Send**. O checklist aparece na aba
+  **Response** (e tambem no **Console**, `Ctrl+Shift+I`), com a causa provavel de
+  cada falha - VPN, senha do JKS, ACL, nome do topico. Nenhuma chamada HTTP sai
+  da maquina: a resposta vem de um eco local de uso unico em 127.0.0.1.
 
   ## Dica
   Ative as variaveis `kafkaApp` e `kafkaTopic` acima (aba **Vars**, tire o `~`)

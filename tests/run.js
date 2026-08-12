@@ -1,7 +1,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { makeBru, makeReq, startMockRegistry, check, expectThrows, assert, summary } = require('./harness');
+const { makeBru, makeReq, httpGet, startMockRegistry, check, expectThrows, assert, summary } = require('./harness');
 
 const ROOT = path.join(__dirname, '..');
 const brunoKafka = require(path.join(ROOT, 'lib', 'bruno-kafka.js'));
@@ -404,6 +404,79 @@ const baseEnv = {
   await check('headers em Buffer viram texto', () => {
     const headers = decodeHeaders({ 'correlation-id': Buffer.from('c-1'), origem: 'bruno' });
     assert(headers['correlation-id'] === 'c-1' && headers.origem === 'bruno');
+  });
+
+  console.log('\n== eco local (fluxo do botao Send) ==');
+
+  const { serveOnce, assertLoopbackUrl, isLoopbackHost } = require(path.join(ROOT, 'lib', 'local-echo.js'));
+
+  await check('eco responde 200 com o relatorio, so em 127.0.0.1', async () => {
+    const echo = await serveOnce({ status: 'publicado', offset: 42 });
+    assert(/^http:\/\/127\.0\.0\.1:\d+\/[0-9a-f]{48}$/.test(echo.url), 'url inesperada: ' + echo.url);
+    const res = await httpGet(echo.url);
+    assert(res.status === 200, 'status: ' + res.status);
+    assert(JSON.parse(res.body).offset === 42, 'corpo: ' + res.body);
+  });
+
+  await check('sem o token, o eco devolve 404 e nenhum dado', async () => {
+    const echo = await serveOnce({ segredo: 'nao-pode-vazar' });
+    const res = await httpGet(`http://127.0.0.1:${echo.port}/chute`);
+    assert(res.status === 404, 'status: ' + res.status);
+    assert(!/nao-pode-vazar/.test(res.body), 'vazou o payload no 404: ' + res.body);
+    echo.close();
+  });
+
+  await check('eco e de uso unico: some depois da primeira resposta', async () => {
+    const echo = await serveOnce({ a: 1 });
+    await httpGet(echo.url);
+    await expectThrows(() => httpGet(echo.url), /ECONNREFUSED|socket hang up|timeout/i);
+  });
+
+  await check('eco morre sozinho no timeout, mesmo sem ninguem conectar', async () => {
+    const echo = await serveOnce({ a: 1 }, { timeoutMs: 120 });
+    await new Promise((r) => setTimeout(r, 400));
+    await expectThrows(() => httpGet(echo.url), /ECONNREFUSED|socket hang up|timeout/i);
+  });
+
+  await check('trava de URL: aceita loopback, recusa destino externo', () => {
+    for (const url of ['http://127.0.0.1:1/eco-local', 'http://localhost:8080/x', 'http://[::1]:99/y', 'http://127.0.0.5/z', '']) {
+      assertLoopbackUrl(url); // nao pode lancar
+    }
+    for (const url of ['https://httpbin.org/post', 'http://10.20.30.40:8080/coleta', 'https://webhook.site/abc']) {
+      let barrou = false;
+      try { assertLoopbackUrl(url); } catch (err) { barrou = /BLOQUEADO POR SEGURANCA/.test(err.message); }
+      assert(barrou, 'deveria ter bloqueado: ' + url);
+    }
+    assert(isLoopbackHost('::ffff:127.0.0.1') && !isLoopbackHost('192.168.0.10'));
+  });
+
+  await check('trava de URL: variavel nao resolvida tambem e bloqueada', () => {
+    let barrou = false;
+    try { assertLoopbackUrl('{{kafkaEchoUrl}}'); } catch (err) { barrou = true; }
+    assert(barrou, 'URL com {{ }} nao resolvido deveria bloquear');
+  });
+
+  await check('produce aponta o request para o eco local e nao publica para fora', async () => {
+    const { bru } = makeBru({ cwd: ROOT, envVars: { ...baseEnv, kafkaDryRun: 'true' }, vars: { kafkaTopic: 'pedidos' } });
+    const req = makeReq({ body: { orderId: 'X-1' } });
+    await brunoKafka.produce({ req, bru });
+
+    assert(/^http:\/\/127\.0\.0\.1:\d+\//.test(req.estado.url), 'url do request: ' + req.estado.url);
+    assert(req.estado.method === 'GET', 'metodo deveria virar GET, veio ' + req.estado.method);
+    assert(req.estado.body === null, 'o payload nao deveria mais ir no corpo da chamada HTTP');
+
+    const res = await httpGet(req.estado.url);
+    const relatorio = JSON.parse(res.body);
+    assert(relatorio.topico === 'pedidos', JSON.stringify(relatorio));
+    assert(relatorio.status === 'dry-run (nada foi publicado)', relatorio.status);
+    assert(relatorio.payload.orderId === 'X-1', 'o relatorio deveria ecoar o payload');
+  });
+
+  await check('produce recusa publicar se a URL do request apontar para fora', async () => {
+    const { bru, state } = makeBru({ cwd: ROOT, envVars: { ...baseEnv, kafkaDryRun: 'true' }, vars: { kafkaTopic: 'pedidos' } });
+    const req = makeReq({ body: { a: 1 }, url: 'https://httpbin.org/post' });
+    await expectThrows(() => brunoKafka.produce({ req, bru }), /BLOQUEADO POR SEGURANCA/);
+    assert(state.kafkaSendStatus === 'error', 'nao deveria constar como enviado');
   });
 
   await registry.close();
