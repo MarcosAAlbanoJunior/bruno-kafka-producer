@@ -55,6 +55,29 @@ const baseEnv = {
     assert(cfg.brokers.length === 1 && cfg.brokers[0] === '127.0.0.1:59092', 'brokers errados');
   });
 
+  await check('le as vars da aba "Vars > Pre Request" (bru.getRequestVar)', () => {
+    // Bruno novo: vars do request NAO aparecem em bru.getVar(), so em getRequestVar()
+    const { bru } = makeBru({
+      cwd: ROOT,
+      envVars: baseEnv,
+      vars: {},
+      requestVars: { kafkaTopic: 'do-request', kafkaApp: 'pagamentos', kafkaKey: 'k-1' },
+    });
+    const cfg = resolveConfig(bru);
+    assert(cfg.topic === 'do-request', 'topico: ' + cfg.topic);
+    assert(cfg.app === 'pagamentos', 'app: ' + cfg.app);
+    assert(cfg.read('kafkaKey') === 'k-1');
+  });
+
+  await check('request var vence environment mesmo vindo de getRequestVar', () => {
+    const { bru } = makeBru({
+      cwd: ROOT,
+      envVars: { ...baseEnv, kafkaTopic: 'do-environment' },
+      requestVars: { kafkaTopic: 'do-request' },
+    });
+    assert(resolveConfig(bru).topic === 'do-request');
+  });
+
   await check('var de request vence var de environment', () => {
     const { bru } = makeBru({
       cwd: ROOT,
@@ -273,6 +296,22 @@ const baseEnv = {
   });
 
   console.log('\n== doctor ==');
+
+  await check('doctor nao usa require.resolve (nao existe no sandbox do Bruno)', async () => {
+    // ignora comentarios: o proprio arquivo explica por que nao usa require.resolve
+    const codigo = fs.readFileSync(path.join(ROOT, 'lib', 'kafka-doctor.js'), 'utf-8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    assert(!/require\.resolve/.test(codigo), 'require.resolve quebra dentro do Bruno');
+    const { checks } = await runDiagnostics({ collectionRoot: ROOT, connection: { brokers: [], ssl: {}, sasl: {} } });
+    assert(checks[0].name === 'Dependencias npm' && checks[0].status === 'ok', JSON.stringify(checks[0]));
+    assert(/kafkajs \d+\./.test(checks[0].detail), 'deveria mostrar a versao: ' + checks[0].detail);
+  });
+
+  await check('doctor funciona mesmo sem saber a pasta da collection', async () => {
+    const { checks } = await runDiagnostics({ connection: { brokers: [], ssl: {}, sasl: {} } });
+    assert(checks[0].status === 'ok' && /kafkajs/.test(checks[0].detail));
+  });
 
   await check('doctor sem brokers para no primeiro item, sem stack trace', async () => {
     const { checks, ok } = await runDiagnostics({ connection: { brokers: [], ssl: {}, sasl: {} } });
