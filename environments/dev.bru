@@ -1,28 +1,26 @@
 vars {
-  ~comentario: Exemplo de cluster corporativo (mTLS + SASL + Schema Registry).
+  ~comentario: Cluster de desenvolvimento. ENVIRONMENT = CLUSTER: topico e payload ficam no request.
   ~comentario2: Qualquer variavel aceita o sufixo _<kafkaApp> para variar por aplicacao.
-  kafkaBrokers: broker1.hml.interno:9093,broker2.hml.interno:9093
+  kafkaBrokers: broker1.dev.interno:9093,broker2.dev.interno:9093
   kafkaClientId: bruno-kafka
   kafkaSslEnabled: true
   kafkaSslRejectUnauthorized: true
-  kafkaCertsDir: C:/certs/hml
+  kafkaCertsDir: C:/certs/dev
   kafkaTruststore: truststore-corporativo.jks
   kafkaKeystore:
-  kafkaKeystore_pagamentos: pagamentos-hml.jks
-  kafkaKeystore_pedidos: pedidos-hml.p12
+  kafkaKeystore_pagamentos: pagamentos-dev.jks
   kafkaSaslEnabled: true
   kafkaSaslMechanism: scram-sha-512
-  kafkaSaslUsername: svc-default-hml
-  kafkaSaslUsername_pagamentos: svc-pagamentos-hml
+  kafkaSaslUsername: svc-default-dev
+  kafkaSaslUsername_pagamentos: svc-pagamentos-dev
   kafkaSchemaRegistryEnabled: true
-  kafkaSchemaRegistryUrl: https://schema-registry.hml.interno
-  kafkaSchemaRegistryUsername: svc-registry-hml
+  kafkaSchemaRegistryUrl: https://schema-registry.dev.interno
+  kafkaSchemaRegistryUsername: svc-registry-dev
   kafkaDryRun: false
 }
 vars:secret [
   kafkaTruststorePassword,
   kafkaKeystorePassword_pagamentos,
-  kafkaKeystorePassword_pedidos,
   kafkaSaslPassword,
   kafkaSaslPassword_pagamentos,
   kafkaSchemaRegistryPassword

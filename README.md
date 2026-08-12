@@ -9,7 +9,7 @@ Confluent Schema Registry (Avro, JSON Schema, Protobuf) — todos opcionais.
 
 | Onde | O que mora ali | Com que frequência muda |
 |---|---|---|
-| **Environment** | o **cluster**: brokers, certificados, senhas, registry | 3x (dev, hml, prod) |
+| **Environment** | o **cluster**: brokers, certificados, senhas, registry | 3x (local, dev, hml) |
 | **Pasta** | a **aplicação**: qual certificado/usuário usar | 1x por app |
 | **Request** | o **evento**: tópico, key, headers, payload | dezenas |
 
@@ -18,7 +18,7 @@ O tópico **não** fica no environment. É isso que evita a explosão de
 
 ```
 kafka-bruno/
-├── environments/          dev.bru | hml.bru | prod.bru   <- 1 por CLUSTER
+├── environments/          local.bru | dev.bru | hml.bru  <- 1 por CLUSTER
 ├── pagamentos/            <- 1 pasta por APLICAÇÃO
 │   ├── Pedido Criado.bru
 │   └── Pedido Cancelado.bru
@@ -158,7 +158,7 @@ Nada disso mexe em script: os requests chamam uma linha só de
 | `kafkaSaslPassword` | 🔒 secret |
 | `kafkaSchemaRegistryEnabled` / `kafkaSchemaRegistryUrl` / `kafkaSchemaRegistryUsername` | Schema Registry |
 | `kafkaSchemaRegistryPassword` | 🔒 secret |
-| `kafkaIsProduction` / `kafkaAllowProduction` | trava de produção (abaixo) |
+| `kafkaIsProduction` / `kafkaAllowProduction` | rede de segurança contra produção (abaixo); não usadas nos environments atuais |
 | `kafkaDryRun` | valida sem publicar |
 
 **Request/pasta (evento).**
@@ -172,12 +172,16 @@ Nada disso mexe em script: os requests chamam uma linha só de
 | `kafkaSchemaSubject` / `kafkaSchemaId` / `kafkaSchemaInline` / `kafkaSchemaFile` | como resolver o schema |
 | `kafkaMaxMessages` / `kafkaFromBeginning` | só no request de consumir |
 
-## Trava de produção
+## Produção não mora aqui
 
-Environment com `kafkaIsProduction: true` (ou cujo **nome** contenha "prod"/"prd")
-recusa envios até alguém mudar `kafkaAllowProduction` para `true` na tela de
-Environment. `kafkaDryRun: true` continua funcionando normalmente — dá para
-validar o payload contra o schema de produção sem publicar nada.
+Esta collection cobre **local, dev e hml**. Não existe environment de produção, e
+publicar em produção não é caso de uso dela.
+
+A trava continua no código como rede de segurança: se alguém clonar um
+environment e chamar de `prod`/`prd`, ou marcar `kafkaIsProduction: true`, o envio
+é **recusado** até que se defina explicitamente `kafkaAllowProduction: true`. Ou
+seja, criar um ambiente de produção por engano não publica nada por engano.
+`kafkaDryRun: true` continua liberado nesse caso, para validar payload sem enviar.
 
 ## Schema Registry
 
