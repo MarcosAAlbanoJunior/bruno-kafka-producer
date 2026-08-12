@@ -1,13 +1,19 @@
 /* Harness de teste: simula o objeto `bru`/`req` do Bruno e um Schema Registry. */
 const http = require('http');
 
-function makeBru({ envVars = {}, vars = {}, envName = 'local', cwd }) {
+/**
+ * `vars`        simula runtime variables (bru.getVar) - Bruno antigo
+ * `requestVars` simula as vars da aba "Vars > Pre Request" das versoes novas,
+ *               que SO aparecem em bru.getRequestVar()
+ */
+function makeBru({ envVars = {}, vars = {}, requestVars, envName = 'local', cwd }) {
   const state = { ...vars };
   const skipped = { value: false };
   const bru = {
     cwd: () => cwd,
     getEnvVar: (n) => envVars[n],
     getVar: (n) => state[n],
+    ...(requestVars ? { getRequestVar: (n) => requestVars[n] } : {}),
     setVar: (n, v) => { state[n] = v; },
     getEnvName: () => envName,
     interpolate: (s) => String(s).replace(/\{\{(\w+)\}\}/g, (m, k) => (state[k] !== undefined ? state[k] : (envVars[k] !== undefined ? envVars[k] : m))),
