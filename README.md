@@ -18,6 +18,9 @@ kafka-bruno/
 │   └── kafka-producer.js       # o "método custom" -> sendKafkaMessage()
 ├── schemas/
 │   └── pedido-value.avsc       # exemplo de schema Avro versionado no Git (aberto)
+├── scripts/
+│   ├── register-avro-schema.sh # curl (via jq) para registrar schema no Schema Registry
+│   └── produce-via-rest-proxy.sh # curl para publicar via Kafka REST Proxy
 ├── environments/
 │   └── local.bru               # config aberta: brokers, tópico, caminhos dos stores
 └── Send Kafka Message.bru      # request que aciona o método
@@ -220,3 +223,54 @@ Basta duplicar `Send Kafka Message.bru`, trocar `kafkaTopic` (por variável de r
 por exemplo `bru.setVar('kafkaTopic', 'outro-topico')` antes de chamar
 `sendKafkaMessage`) e o body. A lógica de conexão/SSL/SASL fica toda centralizada em
 `lib/kafka-producer.js` — você não duplica nada disso.
+
+## Publicando via curl (sem abrir o Bruno)
+
+`curl` fala HTTP — o protocolo nativo do Kafka é binário sobre TCP, então não dá pra
+"curlar" direto num broker. O Schema Registry, porém, **é** uma API REST comum, e dá pra
+publicar mensagens via curl **se** houver um REST Proxy (Confluent REST Proxy, Karapace
+REST, Kafka Bridge...) na frente do cluster. Sem REST Proxy, a collection do Bruno
+continua sendo o caminho (ela fala o protocolo do Kafka nativamente via `kafkajs`, sem
+precisar dessa camada extra).
+
+Dois scripts em `scripts/` cobrem os dois pedaços, e ambos foram testados de ponta a
+ponta contra mocks locais das duas APIs antes de entrar no repo:
+
+**1. Registrar um schema (a partir de um arquivo `.avsc`/`.json`) no Schema Registry:**
+
+```bash
+./scripts/register-avro-schema.sh http://localhost:8081 pedidos-value schemas/pedido-value.avsc
+# com auth: ./scripts/register-avro-schema.sh https://registry:8081 pedidos-value schemas/pedido-value.avsc AVRO usuario:senha
+```
+
+Por baixo, isso é um curl assim (o script só cuida de escapar o conteúdo do arquivo
+certinho via `jq`, que é a parte chata de fazer na mão):
+
+```bash
+curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
+  --data "$(jq -n --rawfile schema schemas/pedido-value.avsc '{schema: $schema, schemaType: "AVRO"}')" \
+  http://localhost:8081/subjects/pedidos-value/versions
+```
+
+A resposta traz o `id` do schema — é esse id que você usa em `kafkaValueSchemaId` no
+Bruno, ou no passo 2 abaixo.
+
+**2. Publicar uma mensagem no tópico via REST Proxy, usando esse schema id:**
+
+```bash
+./scripts/produce-via-rest-proxy.sh http://localhost:8082 pedidos 1 '{"orderId":"12345","status":"created"}'
+# ou lendo o valor de um arquivo:
+./scripts/produce-via-rest-proxy.sh http://localhost:8082 pedidos 1 @payload.json
+```
+
+Curl equivalente:
+
+```bash
+curl -X POST -H "Content-Type: application/vnd.kafka.avro.v2+json" \
+  -H "Accept: application/vnd.kafka.v2+json" \
+  --data '{"value_schema_id": 1, "records": [{"value": {"orderId":"12345","status":"created"}}]}' \
+  http://localhost:8082/topics/pedidos
+```
+
+Ambos os scripts pedem `curl` e `jq` (só isso, nada de Node/Bruno) e trazem `--help`
+implícito: rode sem argumentos pra ver a mensagem de uso.
