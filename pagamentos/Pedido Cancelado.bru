@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{kafkaEchoUrl}}
+  url: http://127.0.0.1:1/eco-local
   body: json
   auth: none
 }
@@ -47,4 +47,7 @@ docs {
   **Clone** do "Pedido Criado" com duas mudancas - `kafkaTopic` na aba Vars e o
   JSON do Body. O `script:pre-request` continua com a mesma linha unica, porque
   toda a logica mora em `lib/bruno-kafka.js`.
+
+  Envie com **Send**: o recibo (topico, particao, offset) aparece na aba
+  **Response**, respondido por um eco local - nada sai da maquina.
 }

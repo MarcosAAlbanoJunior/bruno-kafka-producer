@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{kafkaEchoUrl}}
+  url: http://127.0.0.1:1/eco-local
   body: none
   auth: none
 }
@@ -20,7 +20,7 @@ vars:pre-request {
 
 script:pre-request {
   const path = require('path');
-  await require(path.join(bru.cwd(), 'lib', 'bruno-kafka.js')).consume({ bru });
+  await require(path.join(bru.cwd(), 'lib', 'bruno-kafka.js')).consume({ req, bru });
 }
 
 tests {
@@ -50,6 +50,8 @@ docs {
   | `kafkaFromBeginning` | `true` le desde o inicio da retencao |
 
   ## Onde ver o resultado
+  Clique em **Send**: a aba **Response** traz as mensagens em JSON, prontas para
+  ler ou copiar. Alem dela:
   - **Console** do Bruno (`Ctrl+Shift+I`): resumo formatado
   - **`out/last-consume.json`**: o resultado completo, para abrir no editor,
     dar diff ou colar num chamado (essa pasta esta no `.gitignore`)
